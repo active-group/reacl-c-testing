@@ -8,7 +8,7 @@ It is based on the [React Testing Library](https://testing-library.com/docs/reac
 
 ## Documentation
 
-The API documentation for the latest release are available [here](https://cljdoc.xyz/d/de.active-group/reacl-c-testing/CURRENT).
+The API documentation for the latest release is available [here](https://cljdoc.xyz/d/de.active-group/reacl-c-testing/CURRENT).
 
 ## License
 
