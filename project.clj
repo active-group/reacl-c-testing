@@ -1,4 +1,4 @@
-(defproject de.active-group/reacl-c-testing "0.1.0-SNAPSHOT"
+(defproject de.active-group/reacl-c-testing "0.1.0"
   :description "Library with utilities to write advanced tests of Reacl-c items and applications."
   :url "http://github.com/active-group/reacl-c-testing"
   
@@ -7,7 +7,7 @@
 
   :dependencies [[org.clojure/clojure "1.10.1" :scope "provided"]
                  [org.clojure/clojurescript "1.10.773" :scope "provided"]
-                 [de.active-group/reacl-c "0.11.0-SNAPSHOT"]
+                 [de.active-group/reacl-c "0.11.0"]
                  [de.active-group/active-clojure "0.36.0"]
                  [de.active-group/cljs-async "2.0.0"]]
 
