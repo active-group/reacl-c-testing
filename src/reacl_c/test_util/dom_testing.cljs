@@ -1,4 +1,33 @@
 (ns reacl-c.test-util.dom-testing
+  "This namespace builds upon the [React Testing
+  Library](https://testing-library.com/docs/react-testing-library/intro/)
+  to enable unit tests of the functinality of Reacl-c items.
+
+  The basic functionality is that you render your item to the DOM in a
+  certain state, check that certain elements are there, maybe simulate
+  user interactions with it and check again:
+
+  ```
+  (dt/rendering
+    (dom/button {:onClick (fn [st _] (* 2 st))} \"Button\")
+    :state 42
+    (fn [env]
+      (is (some? (dt/query env (dt/by-text \"Button\"))))
+      (dt/fire-event (dt/get env (dt/by-text \"Button\")) :click)
+      (is (= 84 (dt/current-state env)))))
+  ```
+
+  You can also interact with the item via
+  messages ([[send-message!]]), and check for the actions it
+  emits ([[queue-actions]] and [[pop-action!]]).
+
+  If your item has an asynchronous behaviour, e.g. starts a timeout
+  before it changes its contents you can make your test asynchronous
+  as well by using promises. Functions that are labelled asynchronous
+  here, for example [[find]], do return a promise. The
+  library [cljs-async](https://github.com/active-group/cljs-async) can
+  be handy to write asynchronous tests.
+  "
   (:require [reacl-c.main.react :as main-react]
             [reacl-c.main :as main]
             [reacl-c.core :as c]
@@ -14,6 +43,8 @@
 
 ;; TODO: https://github.com/testing-library/user-event ?
 ;; TODO: getNodeText, getRoles, isInaccessible
+
+;; TODO: wait-for-state; wait-for-action?
 
 (defn ^:no-doc with-config [config f]
   (let [previous (atom nil)]
@@ -62,8 +93,8 @@
 (defn- rerender! [env]
   (.rerender env (run (aux env))))
 
-(defn ^{:arglists '[(item options... f)]
-        :doc "Calls `f` with a rendering environment that 'runs' the given item.
+(def ^{:arglists '[(item options... f)]
+       :doc "Calls `f` with a rendering environment that 'runs' the given item.
 Options can be
 
 - `:state` for the initial state of the item (defaulting to `nil`),
@@ -75,54 +106,54 @@ Options can be
 Note that if `f` is asynchronous (returns a promise), then rendering will continue until the promise is resolved or rejected.
  "}
   rendering
-  [item & args]
-  (assert (c/item? item) item)
-  (assert (not-empty args))
-  (let [f (last args)
-        options (apply hash-map (drop-last args))]
-    (assert (ifn? f) f)
-    (let [container (map-get options :container
-                             ;; by default, hide the container if the document is visible.
-                             ;; Note: visibility changes when putting tabs in foreground/background (in Chrome)
-                             (let [visible? (map-get options :visible? (.-hidden js/document))]
-                               (let [e (js/document.createElement "DIV")
-                                     body js/document.body]
-                                 (when (not visible?) (set! (.-visibility (.-style e)) "hidden"))
-                                 (.appendChild body e)
-                                 e)))
+  (fn [item & args]
+    (assert (c/item? item) item)
+    (assert (not-empty args))
+    (let [f (last args)
+          options (apply hash-map (drop-last args))]
+      (assert (ifn? f) f)
+      (let [container (map-get options :container
+                               ;; by default, hide the container if the document is visible.
+                               ;; Note: visibility changes when putting tabs in foreground/background (in Chrome)
+                               (let [visible? (map-get options :visible? (.-hidden js/document))]
+                                 (let [e (js/document.createElement "DIV")
+                                       body js/document.body]
+                                   (when (not visible?) (set! (.-visibility (.-style e)) "hidden"))
+                                   (.appendChild body e)
+                                   e)))
 
-          initial-state (:state options)
+            initial-state (:state options)
 
-          ;; Note: because a toplevel state change requires a
-          ;; (.rerender env), and we also want to have access to the
-          ;; toplevel state directly, we start with and empty item
-          ;; (which cannot change state) to create the env, then set a
-          ;; watch on the atom below, after the env has beed created.
-          a {:current (atom {:state nil :item nil})
-             :component (atom nil)
-             :action-queue (atom (when (:queue-actions? options) #queue []))}
+            ;; Note: because a toplevel state change requires a
+            ;; (.rerender env), and we also want to have access to the
+            ;; toplevel state directly, we start with and empty item
+            ;; (which cannot change state) to create the env, then set a
+            ;; watch on the atom below, after the env has beed created.
+            a {:current (atom {:state nil :item nil})
+               :component (atom nil)
+               :action-queue (atom (when (:queue-actions? options) #queue []))}
           
-          env (doto (react-tu/render (run a)
-                                     (clj->js (-> options
-                                                  (dissoc :visible?
-                                                          :queue-actions?
-                                                          :state
-                                                          :configuration)
-                                                  (assoc :container container))))
-                (aux a))]
+            env (doto (react-tu/render (run a)
+                                       (clj->js (-> options
+                                                    (dissoc :visible?
+                                                            :queue-actions?
+                                                            :state
+                                                            :configuration)
+                                                    (assoc :container container))))
+                  (aux a))]
 
-      (add-watch (:current a) :updater
-                 (fn [_ atom old new]
-                   (rerender! env)))
-      (reset! (:current a) {:state initial-state :item item})
+        (add-watch (:current a) :updater
+                   (fn [_ atom old new]
+                     (rerender! env)))
+        (reset! (:current a) {:state initial-state :item item})
       
-      (with-config (merge {:getElementError default-get-element-error}
-                          (:configuration options))
-        (fn []
-          (async/try-finally (fn []
-                               (f env))
-                             (fn []
-                               (react-tu/cleanup env))))))))
+        (with-config (merge {:getElementError default-get-element-error}
+                            (:configuration options))
+          (fn []
+            (async/try-finally (fn []
+                                 (f env))
+                               (fn []
+                                 (react-tu/cleanup env)))))))))
 
 (defn ^:no-doc as-fragment [env]
   (.-asFragment env))
