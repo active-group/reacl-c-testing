@@ -456,12 +456,6 @@ Note that if `f` is asynchronous (returns a promise), then rendering will contin
   (std-q-runner "ByTestId"
                 value options))
 
-(defn ^{:deprecated true
-        :doc "Query by the `:data-testid` attribute of a node. Use [[by-testid]] instead."}
-  by-test-id
-  [value & options]
-  (apply by-testid value options))
-
 (def ^{:doc "Query for anything."} anything
   ((build-query-fn (fn [env]
                      (letfn [(r [n]
