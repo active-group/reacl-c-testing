@@ -1,4 +1,4 @@
-(defproject de.active-group/reacl-c-testing "0.1.0"
+(defproject de.active-group/reacl-c-testing "0.1.1"
   :description "Library with utilities to write advanced tests of Reacl-c items and applications."
   :url "http://github.com/active-group/reacl-c-testing"
   
