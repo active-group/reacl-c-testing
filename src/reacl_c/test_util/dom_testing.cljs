@@ -33,7 +33,7 @@
             [reacl-c.core :as c]
             [active.clojure.functions :as f]
             [active.clojure.lens :as lens]
-            [cljs-async.core :as async]
+            [cljs-async.core :as async :include-macros true]
             ["@testing-library/dom" :as dom-tu]
             ["@testing-library/react" :as react-tu])
   (:refer-clojure :exclude [get find]
@@ -72,7 +72,11 @@
   ;; run 'controlled', storing state in the :current atom
   (let [c (:current aux)
         aq (:action-queue aux)
-        component (main-react/embed (main/execute-effects (:item @c))
+        component-ref (:component-ref aux)
+        component (main-react/embed (main/execute-effects
+                                     (c/with-ref (fn [ref]
+                                                   (reset! component-ref ref)
+                                                   (c/refer (:item @c) ref))))
                                     {:state (:state @c)
                                      :set-state!
                                      (fn [v] (reset! c (assoc @c :state v)))
@@ -81,7 +85,6 @@
                                        (if (some? @aq)
                                          (swap! aq conj a)
                                          (main/action-error a)))})]
-    (reset! (:component aux) component)
     component))
 
 (defn- aux
@@ -130,7 +133,7 @@ Note that if `f` is asynchronous (returns a promise), then rendering will contin
             ;; (which cannot change state) to create the env, then set a
             ;; watch on the atom below, after the env has beed created.
             a {:current (atom {:state nil :item nil})
-               :component (atom nil)
+               :component-ref (atom nil)
                :action-queue (atom (when (:queue-actions? options) #queue []))}
           
             env (doto (react-tu/render (run a)
@@ -158,8 +161,12 @@ Note that if `f` is asynchronous (returns a promise), then rendering will contin
 (defn ^:no-doc as-fragment [env]
   (.-asFragment env))
 
-(defn ^:no-doc act [env & args]
-  (apply (.-act env) args))
+(defn ^:no-doc act [f & args]
+  (let [pseudo-promise (apply react-tu/act f args)]
+    ;; Note: it seems react-ru/act does not return a proper promise (conforming to JS spec), but just an anonymous object with a 'then' method.
+    ;; We need a propert promise for cljs-async :-/
+    (async/promise (fn [resolve reject]
+                     (.then pseudo-promise resolve reject)))))
 
 (defn unmount!
   "Stops rendering in the given rendering environment. You usually don't have to call this."
@@ -237,7 +244,7 @@ Note that if `f` is asynchronous (returns a promise), then rendering will contin
 (defn send-message!
   "Sends a message to the item running in the given rendering environment."
   [env msg]
-  (main-react/send-message! @(:component (aux env)) msg))
+  (main-react/send-message! @(:component-ref (aux env)) msg))
 
 (defn container
   "Returns the container element used in the given rendering environment."
@@ -531,23 +538,28 @@ Note that if `f` is asynchronous (returns a promise), then rendering will contin
     ;; Note: text here (and in all other standard queries, can be a predicate fn too.
     (apply q attribute text options)))
 
-(defn- fire-event* [node event]
-  (react-tu/fireEvent node event))
-
 (defn fire-event
   "Fire an event on the given DOM `node`, where `event` can be a DOM
   Event object, or a keywork like `:click` for standard events. See
   https://github.com/testing-library/dom-testing-library/blob/master/src/event-map.js
   for a list."
   [node event & [event-properties]]
-  (fire-event* node
-               (if (instance? js/Event event)
-                 (do (assert (nil? event-properties) "Additional event properties can not be set on an event object argument.")
-                     event)
-                 ;; Note: createElemnt.click() uses default properties, but createEvent("click") doesn't :-/ damn!
-                 ;; How can we distinguish it? Let's use: keyword event => default; string event => generic.
-                 (let [f (if (string? event)
-                           (partial react-tu/createEvent event)
-                           (or (aget react-tu/createEvent (name event))
-                               (throw (js/Error (str "Not a known standard event: " (pr-str event) ".")))))]
-                   (f node (clj->js event-properties))))))
+  (react-tu/fireEvent node
+                      (if (instance? js/Event event)
+                        (do (assert (nil? event-properties) "Additional event properties can not be set on an event object argument.")
+                            event)
+                        ;; Note: createElemnt.click() uses default properties, but createEvent("click") doesn't :-/ damn!
+                        ;; How can we distinguish it? Let's use: keyword event => default; string event => generic.
+                        (let [f (if (string? event)
+                                  (partial react-tu/createEvent event)
+                                  (or (aget react-tu/createEvent (name event))
+                                      (throw (js/Error (str "Not a known standard event: " (pr-str event) ".")))))]
+                          (f node (clj->js event-properties))))))
+
+#_(defn fire-event-async
+  "Fire an event on the given DOM `node`, where `event` can be a DOM
+  Event object, or a keywork like `:click` for standard events. See
+  https://github.com/testing-library/dom-testing-library/blob/master/src/event-map.js
+  for a list."
+  [node event & [event-properties]]
+  (act #(async/async (fire-event node event event-properties))))

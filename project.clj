@@ -1,20 +1,20 @@
-(defproject de.active-group/reacl-c-testing "0.1.1"
+(defproject de.active-group/reacl-c-testing "0.2.0-SNAPSHOT1"
   :description "Library with utilities to write advanced tests of Reacl-c items and applications."
   :url "http://github.com/active-group/reacl-c-testing"
   
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :dependencies [[org.clojure/clojure "1.10.1" :scope "provided"]
-                 [org.clojure/clojurescript "1.10.773" :scope "provided"]
-                 [de.active-group/reacl-c "0.11.2"]
+  :dependencies [[org.clojure/clojure "1.12.0" :scope "provided"]
+                 [org.clojure/clojurescript "1.12.38" :scope "provided"]
+                 [de.active-group/reacl-c "0.12.1"]
                  [de.active-group/active-clojure "0.36.0"]
-                 [de.active-group/cljs-async "2.0.0"]]
+                 [de.active-group/cljs-async "2.0.1"]]
 
   :plugins [[lein-codox "0.10.8"]
             [lein-auto "0.1.3"]]
 
-  :profiles {:shadow {:dependencies [[thheller/shadow-cljs "2.11.7"]
+  :profiles {:shadow {:dependencies [[thheller/shadow-cljs "3.0.4"]
                                      [binaryage/devtools "1.0.2"]]
                       :source-paths ["src" "test"]
                       :resource-paths ["target"]}

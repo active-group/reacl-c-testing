@@ -181,7 +181,6 @@
 
         (is (= :x (dom-t/pop-action! env)) "returns :x")))
 
-     ;; (dom-t/fire-event (dom-t/get env (dom-t/by-text "foo")) :click)
      (is (string/starts-with? (try (dom-t/pop-action! env)
                                    ""
                                    (catch :default e
@@ -216,7 +215,8 @@
         :state 1
         (fn [env]
           (is (some? (dom-t/query env (dom-t/by-text "42")))))))
-  
+
+     ;; TODO: these two give a bunch of React 18 warnings;
      (testing "mocking an effect"
        (with-redefs [running-effects-test-effect (fn [x]
                                                      (c/effect (fn [] (* x 3))))]
