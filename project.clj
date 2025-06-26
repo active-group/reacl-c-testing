@@ -14,9 +14,7 @@
   :plugins [[lein-codox "0.10.8"]
             [lein-auto "0.1.3"]]
 
-  :profiles {:shadow {:dependencies [[org.clojure/clojure "1.12.0"]
-                                     [org.clojure/clojurescript "1.12.38"]
-                                     [thheller/shadow-cljs "3.0.4"]
+  :profiles {:shadow {:dependencies [[thheller/shadow-cljs "2.11.7"]
                                      [binaryage/devtools "1.0.2"]]
                       :source-paths ["src" "test"]
                       :resource-paths ["target"]}
