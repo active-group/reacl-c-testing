@@ -9,7 +9,7 @@
                  [org.clojure/clojurescript "1.10.773" :scope "provided"]
                  [de.active-group/reacl-c "0.12.1"]
                  [de.active-group/active-clojure "0.36.0"]
-                 [de.active-group/cljs-async "2.0.1"]]
+                 [de.active-group/cljs-async "2.0.0"]]
 
   :plugins [[lein-codox "0.10.8"]
             [lein-auto "0.1.3"]]
