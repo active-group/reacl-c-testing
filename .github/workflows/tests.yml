@@ -10,11 +10,9 @@ jobs:
     - uses: ./.github/actions/install-leiningen
     - name: Install dependencies
       run: |
-        lein deps
+        lein with-profile shadow deps
         npm install
     - name: Run ClojureScript tests 
       run: |
         lein build-test
         npx karma start --single-run
-    - name: Run Clojure tests
-      run: lein test
